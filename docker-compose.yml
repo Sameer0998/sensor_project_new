@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sensor-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: sensor_data
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  microservice-b:
+    build:
+      context: ./microservice-b
+      dockerfile: Dockerfile
+    container_name: sensor-microservice-b
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=sensor_data
+      - SERVER_PORT=8080
+      - GRPC_PORT=50051
+      - JWT_SECRET=your_secret
+      - TOKEN_EXPIRY_HOURS=24
+      - MAX_CONNECTIONS=10
+    restart: unless-stopped
+
+  microservice-a:
+    build:
+      context: ./microservice-a
+      dockerfile: Dockerfile
+    container_name: sensor-microservice-a
+    depends_on:
+      - microservice-b
+    environment:
+      - SERVER_PORT=8090
+      - GRPC_SERVER_ADDR=microservice-b:50051
+    ports:
+      - "8090:8090"
+    restart: unless-stopped
+
+volumes:
+  mysql-data:

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package sensor;
+
+option go_package = "sensor_project/proto/sensor";
+
+// SensorData represents a single sensor reading
+message SensorData {
+  float sensor_value = 1;
+  string sensor_type = 2;
+  string id1 = 3;
+  int32 id2 = 4;
+  int64 timestamp = 5;
+}
+
+// SensorService defines the gRPC service for sending sensor data
+service SensorService {
+  // SendSensorData sends a single sensor reading
+  rpc SendSensorData(SensorData) returns (SensorResponse) {}
+  
+  // StreamSensorData establishes a stream for continuous sensor data
+  rpc StreamSensorData(stream SensorData) returns (SensorResponse) {}
+}
+
+// SensorResponse is the response from the sensor service
+message SensorResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// FrequencyRequest is used to change the data generation frequency
+message FrequencyRequest {
+  int32 interval_ms = 1;
+}
+
+// FrequencyResponse is the response to a frequency change request
+message FrequencyResponse {
+  bool success = 1;
+  string message = 2;
+  int32 current_interval_ms = 3;
+}
